@@ -1,0 +1,16 @@
+-- CreateEnum
+CREATE TYPE "LearningGoal" AS ENUM ('FOUNDATION', 'GRADE_LEVEL', 'EXAM_PREP', 'PROBLEM_SOLVING', 'MASTERY');
+
+-- CreateEnum
+CREATE TYPE "SessionMode" AS ENUM ('STAGE', 'REVIEW');
+
+-- AlterTable
+ALTER TABLE "GameSession" ADD COLUMN     "mode" "SessionMode" NOT NULL DEFAULT 'STAGE',
+ADD COLUMN     "skillCodes" JSONB,
+ADD COLUMN     "theme" TEXT NOT NULL DEFAULT 'GENERAL',
+ADD COLUMN     "wrongStreak" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "levelId" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Student" ADD COLUMN     "goal" "LearningGoal" NOT NULL DEFAULT 'MASTERY',
+ADD COLUMN     "interests" JSONB NOT NULL DEFAULT '{}';

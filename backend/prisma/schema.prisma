@@ -1,0 +1,477 @@
+// Kids Learning Game Platform — Phase 1 (Math Foundation)
+// Subject-agnostic by design: the learning engine works on Skill / StudentSkill,
+// so new subjects reuse it by adding Subject + Skill rows.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Users ─────────────────────────
+
+enum Role {
+  STUDENT
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+enum Grade {
+  K1
+  K2
+  K3
+  P1
+  P2
+  P3
+  P4
+  P5
+  P6
+}
+
+model User {
+  id            String   @id @default(cuid())
+  role          Role
+  // Students sign in with a one-time generated code; only its hash is stored.
+  loginCodeHash String?  @unique
+  // Parents and teachers sign in with email + password (scrypt hash).
+  email         String?  @unique
+  passwordHash  String?
+  displayName   String?
+  createdAt     DateTime @default(now())
+
+  student    Student?
+  children   ParentStudent[]
+  classrooms Classroom[]
+  auditLogs  AuditLog[]
+}
+
+// Child data is kept to the minimum: a nickname, an avatar emoji and a grade.
+enum LearningGoal {
+  FOUNDATION
+  GRADE_LEVEL
+  EXAM_PREP
+  PROBLEM_SOLVING
+  MASTERY
+}
+
+model Student {
+  id            String       @id @default(cuid())
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname      String
+  avatar        String
+  grade         Grade
+  xp            Int          @default(0)
+  coins         Int          @default(0)
+  // Interest profile: theme → score (see personalization/interest.engine.ts)
+  interests     Json         @default("{}")
+  goal          LearningGoal @default(MASTERY)
+  /// the subject the child is playing now; map, path and placement follow it
+  activeSubject String       @default("MATH")
+  createdAt     DateTime     @default(now())
+
+  skills       StudentSkill[]
+  assessments  Assessment[]
+  attempts     QuestionAttempt[]
+  sessions     GameSession[]
+  achievements StudentAchievement[]
+  levels       StudentLevelProgress[]
+  items        StudentItem[]
+  parents      ParentStudent[]
+  classrooms   ClassroomStudent[]
+  submissions  AssignmentSubmission[]
+}
+
+// ───────────────────────── Curriculum ─────────────────────────
+
+model Subject {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  name      String
+  emoji     String  @default("📚")
+  sortOrder Int     @default(0)
+  skills    Skill[]
+  worlds    World[]
+}
+
+model Skill {
+  id            String  @id @default(cuid())
+  code          String  @unique
+  subjectId     String
+  subject       Subject @relation(fields: [subjectId], references: [id])
+  // Skill group in the tree, e.g. NUMBER_SENSE, ADDITION
+  group         String
+  name          String
+  nameTh        String
+  grade         Grade
+  sortOrder     Int
+  maxDifficulty Int     @default(5)
+
+  prerequisites SkillPrerequisite[] @relation("SkillToPrerequisites")
+  dependents    SkillPrerequisite[] @relation("PrerequisiteToSkills")
+  questions     Question[]
+  students      StudentSkill[]
+  levels        GameLevel[]
+}
+
+model SkillPrerequisite {
+  skillId        String
+  prerequisiteId String
+  skill          Skill  @relation("SkillToPrerequisites", fields: [skillId], references: [id], onDelete: Cascade)
+  prerequisite   Skill  @relation("PrerequisiteToSkills", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@id([skillId, prerequisiteId])
+}
+
+// ───────────────────────── Questions ─────────────────────────
+
+enum QuestionSource {
+  GENERATED
+  BANK
+}
+
+// Every question served is persisted so answers are always checked server side.
+model Question {
+  id         String         @id @default(cuid())
+  skillId    String
+  skill      Skill          @relation(fields: [skillId], references: [id])
+  difficulty Int
+  source     QuestionSource @default(GENERATED)
+  prompt     String
+  expression String?
+  visual     Json?
+  options    Json // string[]
+  answer     String
+  hint       String?
+  createdAt  DateTime       @default(now())
+
+  attempts QuestionAttempt[]
+}
+
+enum AttemptContext {
+  PLACEMENT
+  PRACTICE
+}
+
+model QuestionAttempt {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId   String         @unique
+  question     Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  skillId      String
+  difficulty   Int
+  answer       String
+  isCorrect    Boolean
+  timeMs       Int
+  attemptNo    Int            @default(1)
+  hintUsed     Boolean        @default(false)
+  context      AttemptContext
+  assessmentId String?
+  sessionId    String?
+  createdAt    DateTime       @default(now())
+
+  @@index([studentId, skillId, createdAt])
+}
+
+// ───────────────────────── Assessment ─────────────────────────
+
+enum AssessmentType {
+  PLACEMENT
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Assessment {
+  id                String           @id @default(cuid())
+  studentId         String
+  student           Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type              AssessmentType
+  /// placement is per subject
+  subjectCode       String           @default("MATH")
+  status            AssessmentStatus @default(IN_PROGRESS)
+  // Adaptive engine state (see assessments/placement.engine.ts)
+  state             Json
+  currentQuestionId String?
+  result            Json?
+  startedAt         DateTime         @default(now())
+  completedAt       DateTime?
+}
+
+// ───────────────────────── Skill profile / Mastery ─────────────────────────
+
+enum SkillStatus {
+  NOT_STARTED
+  LEARNING
+  PRACTICING
+  MASTERED
+}
+
+model StudentSkill {
+  id               String      @id @default(cuid())
+  studentId        String
+  student          Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId          String
+  skill            Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  mastery          Float       @default(0)
+  // Estimate from placement; blended out as real practice data accumulates
+  placementMastery Float?
+  accuracy         Float       @default(0)
+  attempts         Int         @default(0)
+  confidence       Float       @default(0)
+  status           SkillStatus @default(NOT_STARTED)
+  reviewCount      Int         @default(0)
+  lastPracticedAt  DateTime?
+  nextReviewAt     DateTime?
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([studentId, skillId])
+}
+
+// ───────────────────────── Game ─────────────────────────
+
+model World {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  subjectId String
+  subject   Subject     @relation(fields: [subjectId], references: [id])
+  name      String
+  nameTh    String
+  emoji     String
+  theme     String
+  sortOrder Int
+  levels    GameLevel[]
+}
+
+enum ActivityType {
+  TARGET
+  BUILDING
+  TRAIN
+  FISHING
+  RACING
+  PUZZLE
+  SHOP
+  MAGIC
+  MINING
+  BOSS
+}
+
+model GameLevel {
+  id            String       @id @default(cuid())
+  worldId       String
+  world         World        @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  skillId       String
+  skill         Skill        @relation(fields: [skillId], references: [id])
+  sortOrder     Int
+  name          String
+  activity      ActivityType
+  difficulty    Int
+  questionCount Int          @default(5)
+  isBoss        Boolean      @default(false)
+  // Boss battles mix every skill practised in the world; skillId is the boss's main skill.
+  bossEmoji     String?
+
+  sessions GameSession[]
+  progress StudentLevelProgress[]
+
+  @@unique([worldId, sortOrder])
+}
+
+enum SessionMode {
+  STAGE
+  REVIEW
+  ASSIGNMENT
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+model GameSession {
+  id                String        @id @default(cuid())
+  studentId         String
+  student           Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // null for a REVIEW session, which mixes the skills listed in skillCodes
+  levelId           String?
+  level             GameLevel?    @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  mode              SessionMode   @default(STAGE)
+  skillCodes        Json?
+  theme             String        @default("GENERAL")
+  status            SessionStatus @default(IN_PROGRESS)
+  currentDifficulty Int
+  answered          Int           @default(0)
+  correct           Int           @default(0)
+  streak            Int           @default(0)
+  wrongStreak       Int           @default(0)
+  assignmentId      String?
+  currentQuestionId String?
+  stars             Int?
+  xpEarned          Int?
+  coinsEarned       Int?
+  startedAt         DateTime      @default(now())
+  completedAt       DateTime?
+
+  @@index([studentId, startedAt])
+}
+
+model StudentLevelProgress {
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  levelId     String
+  level       GameLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  bestStars   Int       @default(0)
+  plays       Int       @default(0)
+  completedAt DateTime?
+
+  @@id([studentId, levelId])
+}
+
+// ───────────────────────── Rewards ─────────────────────────
+
+model Achievement {
+  id          String               @id @default(cuid())
+  code        String               @unique
+  name        String
+  description String
+  emoji       String
+  xpReward    Int                  @default(0)
+  coinReward  Int                  @default(0)
+  students    StudentAchievement[]
+}
+
+model StudentAchievement {
+  studentId     String
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@id([studentId, achievementId])
+}
+
+// ───────────────────────── Character / Inventory ─────────────────────────
+
+enum ItemSlot {
+  HAT
+  OUTFIT
+  PET
+  ACCESSORY
+}
+
+model Item {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  name            String
+  slot            ItemSlot
+  emoji           String
+  // null = cannot be bought; earned another way (e.g. defeating a world's boss)
+  price           Int?
+  rewardWorldCode String?
+  sortOrder       Int
+  students        StudentItem[]
+}
+
+model StudentItem {
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  equipped   Boolean  @default(false)
+  acquiredAt DateTime @default(now())
+
+  @@id([studentId, itemId])
+}
+
+// ───────────── Parent & Teacher platform ─────────────
+
+/**
+ * A parent can see a child only after proving access with the child's login code.
+ */
+model ParentStudent {
+  parentId  String
+  parent    User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([parentId, studentId])
+}
+
+model Classroom {
+  id          String             @id @default(cuid())
+  teacherId   String
+  teacher     User               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  name        String
+  grade       Grade?
+  /**
+   * children join by typing this code
+   */
+  joinCode    String             @unique
+  createdAt   DateTime           @default(now())
+  students    ClassroomStudent[]
+  assignments Assignment[]
+}
+
+model ClassroomStudent {
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@id([classroomId, studentId])
+}
+
+model Assignment {
+  id            String                 @id @default(cuid())
+  classroomId   String
+  classroom     Classroom              @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  skillCode     String
+  title         String
+  questionCount Int                    @default(8)
+  dueAt         DateTime?
+  createdAt     DateTime               @default(now())
+  submissions   AssignmentSubmission[]
+}
+
+/**
+ * Best attempt per student.
+ */
+model AssignmentSubmission {
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  correct      Int
+  total        Int
+  stars        Int
+  attempts     Int        @default(1)
+  completedAt  DateTime   @default(now())
+
+  @@id([assignmentId, studentId])
+}
+
+/**
+ * Who did what to whose data — for child-data accountability.
+ */
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  studentId   String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
