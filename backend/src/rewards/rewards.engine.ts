@@ -78,6 +78,20 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { code: 'BOOKWORM', name: 'หนอนหนังสือ', description: 'อ่านคำภาษาไทยได้เก่ง', emoji: '📖', xpReward: 50, coinReward: 20 },
   { code: 'SHARP_THINKER', name: 'นักคิดหัวไว', description: 'เก่งการอนุมาน', emoji: '🧩', xpReward: 50, coinReward: 20 },
   { code: 'ALL_ROUNDER', name: 'เก่งรอบด้าน', description: 'มีทักษะที่เก่งแล้วครบทุกวิชา', emoji: '🌈', xpReward: 150, coinReward: 80 },
+  // ── Deeper subjects & block worlds ──
+  { code: 'TIME_KEEPER', name: 'นักบอกเวลา', description: 'อ่านนาฬิกาได้เก่ง', emoji: '⏰', xpReward: 50, coinReward: 20 },
+  { code: 'MONEY_SMART', name: 'นักคิดเงินทอน', description: 'นับเงินและทอนเงินได้เก่ง', emoji: '🪙', xpReward: 50, coinReward: 20 },
+  { code: 'DATA_EXPLORER', name: 'นักอ่านแผนภูมิ', description: 'อ่านแผนภูมิได้เก่ง', emoji: '📊', xpReward: 50, coinReward: 20 },
+  { code: 'CHATTERBOX', name: 'นักสนทนาภาษาอังกฤษ', description: 'โต้ตอบบทสนทนาภาษาอังกฤษได้เก่ง', emoji: '💬', xpReward: 50, coinReward: 20 },
+  { code: 'STORY_READER', name: 'นักอ่านเรื่องภาษาอังกฤษ', description: 'อ่านเรื่องสั้นภาษาอังกฤษได้เก่ง', emoji: '📚', xpReward: 80, coinReward: 30 },
+  { code: 'NATURE_GUARDIAN', name: 'ผู้พิทักษ์ธรรมชาติ', description: 'เข้าใจระบบนิเวศและห่วงโซ่อาหาร', emoji: '🌿', xpReward: 50, coinReward: 20 },
+  { code: 'YOUNG_INVENTOR', name: 'นักประดิษฐ์น้อย', description: 'เข้าใจไฟฟ้าและวงจรไฟฟ้า', emoji: '⚡', xpReward: 80, coinReward: 30 },
+  { code: 'SPELLING_SAGE', name: 'เซียนมาตราตัวสะกด', description: 'แยกมาตราตัวสะกดได้เก่ง', emoji: '🔠', xpReward: 50, coinReward: 20 },
+  { code: 'IDIOM_MASTER', name: 'ปรมาจารย์สำนวน', description: 'เข้าใจสำนวนและสุภาษิตไทย', emoji: '📜', xpReward: 80, coinReward: 30 },
+  { code: 'LITTLE_CODER', name: 'โปรแกรมเมอร์ตัวน้อย', description: 'สั่งหุ่นยนต์ทีละขั้นได้เก่ง', emoji: '🤖', xpReward: 50, coinReward: 20 },
+  { code: 'GRID_DETECTIVE', name: 'นักสืบตาราง', description: 'ไขปริศนาตารางตรรกะได้', emoji: '🕵️', xpReward: 80, coinReward: 30 },
+  { code: 'BLOCK_MINER', name: 'นักขุดแร่ตัวจริง', description: 'ผ่านด่านขุดแร่ครบ 5 ด่าน', emoji: '⛏️', xpReward: 40, coinReward: 20 },
+  { code: 'BLOCK_LEGEND', name: 'ตำนานโลกบล็อก', description: 'ปราบบอสโลกบล็อกครบทุกตัว', emoji: '🏆', xpReward: 200, coinReward: 100 },
 ];
 
 export interface AchievementFacts {
@@ -93,6 +107,11 @@ export interface AchievementFacts {
   /** subjects with at least one mastered skill */
   subjectsMastered?: number;
   totalSubjects?: number;
+  /** cleared stages that use the mining activity */
+  miningStages?: number;
+  /** bosses beaten in block-style worlds, out of how many there are */
+  blockBossesDefeated?: number;
+  blockWorlds?: number;
 }
 
 export function earnedAchievements(facts: AchievementFacts): string[] {
@@ -128,6 +147,19 @@ export function earnedAchievements(facts: AchievementFacts): string[] {
     BOOKWORM: has('TH_WORDS'),
     SHARP_THINKER: has('LOG_DEDUCTION'),
     ALL_ROUNDER: (facts.totalSubjects ?? 0) > 1 && (facts.subjectsMastered ?? 0) >= (facts.totalSubjects ?? 0),
+    TIME_KEEPER: has('TIME_CLOCK'),
+    MONEY_SMART: has('MONEY_THAI'),
+    DATA_EXPLORER: has('DATA_GRAPH'),
+    CHATTERBOX: has('EN_CONVERSATION'),
+    STORY_READER: has('EN_READING'),
+    NATURE_GUARDIAN: has('SCI_ECOSYSTEM'),
+    YOUNG_INVENTOR: has('SCI_ELECTRICITY'),
+    SPELLING_SAGE: has('TH_FINAL_SOUNDS'),
+    IDIOM_MASTER: has('TH_IDIOMS'),
+    LITTLE_CODER: has('LOG_CODING'),
+    GRID_DETECTIVE: has('LOG_GRID_LOGIC'),
+    BLOCK_MINER: (facts.miningStages ?? 0) >= 5,
+    BLOCK_LEGEND: (facts.blockWorlds ?? 0) > 0 && (facts.blockBossesDefeated ?? 0) >= (facts.blockWorlds ?? 0),
   };
   return Object.entries(rules)
     .filter(([, ok]) => ok)

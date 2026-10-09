@@ -8,7 +8,7 @@ import { Character } from '@/components/Character';
 import { ClassroomCard } from '@/components/ClassroomCard';
 import { TopBar } from '@/components/TopBar';
 import { InterestPicker } from '@/components/InterestPicker';
-import { api, GOALS, SUBJECT_META, THEMES, tokenStore, type Dashboard, type Goal, type InterestTheme, type Student } from '@/lib/api';
+import { api, goalOptions, SUBJECT_META, THEMES, tokenStore, type Dashboard, type Goal, type InterestTheme, type Student } from '@/lib/api';
 import { SubjectSwitcher } from '@/components/SubjectSwitcher';
 import { handleApiError, useRequireAuth } from '@/lib/useRequireAuth';
 
@@ -79,7 +79,7 @@ export default function DashboardPage() {
       setError(handleApiError(err, router));
     }
   };
-  const setGoal = (goal: Goal) => updateStudent(() => api.setGoal(goal));
+  const setGoal = (goal: Goal) => updateStudent(() => api.setGoal(goal, dash.subject));
   const setInterests = (themes: InterestTheme[]) => updateStudent(() => api.setInterests(themes));
 
   const logout = () => {
@@ -164,9 +164,9 @@ export default function DashboardPage() {
 
         <div className="grid-2">
           <div className="card stack">
-            <h3>🎯 เป้าหมายของฉัน</h3>
+            <h3>🎯 เป้าหมาย{SUBJECT_META[dash.subject]?.nameTh ?? ''}ของฉัน</h3>
             <div className="goal-pick">
-              {GOALS.map((g) => (
+              {goalOptions(dash.subject).map((g) => (
                 <button key={g.value} aria-pressed={dash.student.goal === g.value} onClick={() => setGoal(g.value)}>
                   <span style={{ fontSize: 24 }}>{g.emoji}</span>
                   <span>

@@ -1,3 +1,5 @@
+import { goalFor } from '../learning-path/learning-path.engine.js';
+import { SUBJECTS } from '../curriculum/subjects.js';
 import {
   Body,
   ConflictException,
@@ -37,7 +39,8 @@ export function hashCode(code: string): string {
   return createHash('sha256').update(normalized).digest('hex');
 }
 
-export function publicStudent(s: Student) {
+/** `goal` is the goal for `subject` (default: the subject the child is playing now). */
+export function publicStudent(s: Student, subject: string = s.activeSubject) {
   return {
     id: s.id,
     nickname: s.nickname,
@@ -45,7 +48,8 @@ export function publicStudent(s: Student) {
     grade: s.grade,
     xp: s.xp,
     coins: s.coins,
-    goal: s.goal,
+    goal: goalFor(s, subject),
+    goals: Object.fromEntries(SUBJECTS.map((x) => [x.code, goalFor(s, x.code)])),
     activeSubject: s.activeSubject,
     interests: interestProfile(sanitizeInterests(s.interests)),
   };
@@ -197,9 +201,13 @@ export class StudentsController {
     return publicStudent(await this.prisma.student.update({ where: { id: studentId }, data: { interests } }));
   }
 
+  /** Set the goal for one subject (default: the subject the child is playing now). */
   @Put('me/goal')
   async goal(@StudentId() studentId: string, @Body() dto: GoalDto) {
-    return publicStudent(await this.prisma.student.update({ where: { id: studentId }, data: { goal: dto.goal } }));
+    const student = await this.prisma.student.findUniqueOrThrow({ where: { id: studentId } });
+    const subject = dto.subject ?? student.activeSubject;
+    const subjectGoals = { ...((student.subjectGoals as Record<string, string> | null) ?? {}), [subject]: dto.goal };
+    return publicStudent(await this.prisma.student.update({ where: { id: studentId }, data: { subjectGoals } }), subject);
   }
 
   /** Switch subject: the map, path, placement and dashboard follow it. */

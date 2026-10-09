@@ -4,6 +4,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { SUBJECTS } from '../curriculum/subjects.js';
 import { earnedAchievements } from './rewards.engine.js';
 
+
+/** Block-style worlds (pixel themes) across every subject. */
+const BLOCK_THEMES = ['mine', 'craft'];
 @Injectable()
 export class RewardsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -17,7 +20,7 @@ export class RewardsService {
       this.prisma.gameSession.count({ where: { studentId, status: 'COMPLETED', stars: 3 } }),
       this.prisma.studentSkill.findMany({ where: { studentId, status: 'MASTERED' }, include: { skill: { include: { subject: true } } } }),
       this.prisma.world.findMany({ include: { levels: { select: { id: true } } } }),
-      this.prisma.studentLevelProgress.findMany({ where: { studentId, bestStars: { gte: 1 } }, include: { level: true } }),
+      this.prisma.studentLevelProgress.findMany({ where: { studentId, bestStars: { gte: 1 } }, include: { level: { include: { world: true } } } }),
       this.prisma.studentAchievement.findMany({ where: { studentId }, include: { achievement: true } }),
       this.prisma.studentItem.findMany({ where: { studentId }, include: { item: true } }),
     ]);
@@ -35,6 +38,9 @@ export class RewardsService {
       itemsBought: items.filter((i) => i.item.price != null).length,
       subjectsMastered: new Set(mastered.map((m) => m.skill.subject.code)).size,
       totalSubjects: SUBJECTS.length,
+      miningStages: progress.filter((p) => p.level.activity === 'MINING').length,
+      blockBossesDefeated: progress.filter((p) => p.level.isBoss && BLOCK_THEMES.includes(p.level.world.theme)).length,
+      blockWorlds: worlds.filter((w) => BLOCK_THEMES.includes(w.theme)).length,
     });
     const ownedCodes = new Set(owned.map((o) => o.achievement.code));
     const fresh = await this.prisma.achievement.findMany({

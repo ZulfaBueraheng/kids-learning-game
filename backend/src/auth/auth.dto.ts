@@ -35,6 +35,10 @@ export class InterestsDto {
 export class GoalDto {
   @IsIn(GOALS)
   goal: Goal;
+
+  @IsOptional()
+  @IsIn(SUBJECTS.map((s) => s.code))
+  subject?: string;
 }
 
 export class SubjectDto {

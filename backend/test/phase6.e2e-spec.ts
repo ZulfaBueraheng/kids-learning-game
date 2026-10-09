@@ -89,6 +89,18 @@ describe('Phase 6 — more subjects on the same engine (e2e)', () => {
     const plan = (await api().get('/learning-path').set(as(child)).expect(200)).body;
     expect(plan.subject).toBe('ENGLISH');
     expect(plan.path.every((p: { skillCode: string }) => p.skillCode.startsWith('EN_'))).toBe(true);
+
+    // Goals are per subject: an English goal leaves maths alone.
+    const set = (await api().put('/students/me/goal').set(as(child)).send({ goal: 'PROBLEM_SOLVING' }).expect(200)).body;
+    expect(set.goal).toBe('PROBLEM_SOLVING');
+    expect(set.goals.ENGLISH).toBe('PROBLEM_SOLVING');
+    expect(set.goals.MATH).toBe('MASTERY');
+    const focused = (await api().get('/learning-path').set(as(child)).expect(200)).body;
+    expect(focused.goal).toBe('PROBLEM_SOLVING');
+    expect(focused.path.map((p: { skillCode: string }) => p.skillCode)).toContain('EN_READING');
+    const maths = (await api().get('/learning-path?subject=MATH').set(as(child)).expect(200)).body;
+    expect(maths.goal).toBe('MASTERY');
+    await api().put('/students/me/goal').set(as(child)).send({ goal: 'MASTERY', subject: 'HISTORY' }).expect(400);
   });
 
   it('plays an English stage with the shared game engine', async () => {

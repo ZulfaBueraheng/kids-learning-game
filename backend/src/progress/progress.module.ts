@@ -57,7 +57,7 @@ export class ProgressService {
 
     return {
       subject,
-      student: publicStudent(student),
+      student: publicStudent(student, subject),
       character,
       placementDone: placement > 0,
       level: levelInfo(student.xp),

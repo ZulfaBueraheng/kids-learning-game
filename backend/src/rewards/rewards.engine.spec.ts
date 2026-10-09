@@ -59,6 +59,17 @@ describe('rewards engine', () => {
         'SCI_LIVING',
         'TH_WORDS',
         'LOG_DEDUCTION',
+        'TIME_CLOCK',
+        'MONEY_THAI',
+        'DATA_GRAPH',
+        'EN_CONVERSATION',
+        'EN_READING',
+        'SCI_ECOSYSTEM',
+        'SCI_ELECTRICITY',
+        'TH_FINAL_SOUNDS',
+        'TH_IDIOMS',
+        'LOG_CODING',
+        'LOG_GRID_LOGIC',
       ],
       xp: 1000,
       worldsCompleted: 1,
@@ -67,6 +78,9 @@ describe('rewards engine', () => {
       itemsBought: 1,
       subjectsMastered: 5,
       totalSubjects: 5,
+      miningStages: 5,
+      blockBossesDefeated: 6,
+      blockWorlds: 6,
     });
     expect(all.sort()).toEqual(ACHIEVEMENTS.map((a) => a.code).sort());
   });
@@ -75,6 +89,15 @@ describe('rewards engine', () => {
     const base = { placementCompleted: true, stagesCompleted: 0, perfectStages: 0, masteredSkills: [], xp: 0, worldsCompleted: 0 };
     expect(earnedAchievements({ ...base, subjectsMastered: 4, totalSubjects: 5 })).not.toContain('ALL_ROUNDER');
     expect(earnedAchievements({ ...base, subjectsMastered: 5, totalSubjects: 5 })).toContain('ALL_ROUNDER');
+  });
+
+  it('crowns a block-world legend only after every block boss', () => {
+    const base = { placementCompleted: true, stagesCompleted: 0, perfectStages: 0, masteredSkills: [], xp: 0, worldsCompleted: 0 };
+    expect(earnedAchievements({ ...base, blockBossesDefeated: 5, blockWorlds: 6 })).not.toContain('BLOCK_LEGEND');
+    expect(earnedAchievements({ ...base, blockBossesDefeated: 6, blockWorlds: 6 })).toContain('BLOCK_LEGEND');
+    expect(earnedAchievements({ ...base, blockBossesDefeated: 0, blockWorlds: 0 })).not.toContain('BLOCK_LEGEND');
+    expect(earnedAchievements({ ...base, miningStages: 4 })).not.toContain('BLOCK_MINER');
+    expect(earnedAchievements({ ...base, miningStages: 5 })).toContain('BLOCK_MINER');
   });
 
   it('gives coins for effort and stars', () => {

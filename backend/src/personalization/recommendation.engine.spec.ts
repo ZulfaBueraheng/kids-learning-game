@@ -53,6 +53,13 @@ describe('recommendation engine', () => {
     expect(recs[2].skillCodes).toEqual(['SUB']);
   });
 
+  it('names the next skill in Thai even before the child has started it', () => {
+    const skills = new Map([...base.skills].filter(([code]) => code !== 'ADD'));
+    const [first] = recommend({ ...base, skills, names: new Map([['ADD', 'บวกเลขหลักเดียว']]) });
+    expect(first.reason).toContain('บวกเลขหลักเดียว');
+    expect(first.reason).not.toContain('ADD');
+  });
+
   it('picks the stage whose difficulty fits the child', () => {
     expect(recommend(base)[0].levelId).toBe('add1'); // mastery 0.3 → difficulty ~2, closer to 1 than 3
     const strong = { ...base, skills: new Map([...base.skills, skill('ADD', { mastery: 0.75, status: 'PRACTICING', attempts: 9 })]) };

@@ -67,8 +67,11 @@ Frontend (ทำแล้ว):
 - พอร์ตที่โปรแกรมอื่นใช้อยู่: 3100 (auto-business-platform), 4100, 5433 ผู้ใช้รัน backend ที่ 4000 และ frontend dev ที่ 3200 เอง ถ้าจะทดสอบในเบราว์เซอร์ ให้ copy frontend ไปที่ `D:\RaiNBoW\kids-fe-test` (junction node_modules + `turbopack.root: 'D:/RaiNBoW'`) แล้วรัน backend ที่ 4600 และ frontend ที่ 3300 เพื่อไม่ให้ชนกับของผู้ใช้
 - ผลตรวจล่าสุด: unit 239 ผ่าน, e2e 44 ผ่าน (รันทีละไฟล์), frontend tsc/lint ผ่าน และทดสอบในเบราว์เซอร์ผ่าน
 - ต่อยอดแล้ว (2026-10-06): โลกบล็อกในทุกวิชา (WORD_MINE, CRYSTAL_CAVE, BLOCK_VILLAGE, BLOCK_MAZE) และคลังโจทย์อังกฤษ/ไทยใหญ่ขึ้น รวมตอนนี้ 36 โลก 229 ด่าน 61 ไอเท็ม
-- ยังไม่ได้แก้: เป้าหมาย (Goal) ยังเป็นของคณิตศาสตร์, หน้าแผนที่และหน้าวัดระดับยังไม่มีเสียงหรือแอนิเมชันแบบหน้าเล่นเกม
-- ยังไม่เคย commit
+- ทำแล้ว (2026-10-10): เป้าหมายรายวิชา (`Student.subjectGoals` + `goalFor()` + `SubjectDef.applied`, migration `20261010000000_subject_goals`), Achievement ใหม่ 13 แบบ (รวม 43), แผนที่และหน้าวัดระดับแบบเกม (`components/Celebration.tsx` มี Countdown และ Confetti ใช้ร่วมกัน) และแก้บั๊กชื่อทักษะในภารกิจแนะนำ
+- ผลตรวจล่าสุด: unit 247, e2e 44 ผ่าน, frontend tsc/lint ผ่าน และทดสอบในเบราว์เซอร์ผ่าน
+- พอร์ต 2026-10-10: 4000 (auto-business-platform) และ 3200 (wedding-card-blank) ถูกโปรเจกต์อื่นใช้อยู่ ผู้ใช้ต้องรันเกมนี้ที่พอร์ตอื่น
+- ผู้ใช้ commit และ push ขึ้น origin/main เองแล้ว (2 commit วันที่ 2026-10-07) งานหลังจากนั้นยังไม่ได้ commit
+- ยังเหลือ: `frontend/.gitignore` ตัด `.env.example` ออก (ควรเพิ่ม `!.env.example`)
 
 ## ข้อควรระวังที่เรียนรู้มา
 

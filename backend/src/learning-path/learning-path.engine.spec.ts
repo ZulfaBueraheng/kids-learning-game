@@ -1,5 +1,6 @@
 import { MATH_SKILLS } from '../curriculum/math-foundation.js';
-import { buildLearningPlan, goalTargets, prerequisiteClosure, topologicalOrder, type SkillNode } from './learning-path.engine.js';
+import { SUBJECTS } from '../curriculum/subjects.js';
+import { buildLearningPlan, goalFor, goalTargets, prerequisiteClosure, topologicalOrder, type SkillNode } from './learning-path.engine.js';
 
 const SKILLS: SkillNode[] = MATH_SKILLS.map((s, i) => ({ code: s.code, sortOrder: i, prerequisites: s.prerequisites }));
 
@@ -87,5 +88,26 @@ describe('learning path engine', () => {
     it('exam prep focuses on the child’s own grade', () => {
       expect(goalTargets('EXAM_PREP', META, 'P5').sort()).toEqual(['ALG_EQUATIONS', 'DEC_ADD_SUB', 'GEO_ANGLES', 'PERCENT_CONCEPT']);
     });
+  });
+});
+
+describe('goals per subject', () => {
+  it('uses the subject goal when set, otherwise the general goal', () => {
+    const student = { goal: 'MASTERY' as const, subjectGoals: { ENGLISH: 'FOUNDATION', LOGIC: 'nonsense' } };
+    expect(goalFor(student, 'ENGLISH')).toBe('FOUNDATION');
+    expect(goalFor(student, 'MATH')).toBe('MASTERY');
+    expect(goalFor(student, 'LOGIC')).toBe('MASTERY');
+    expect(goalFor({ goal: 'EXAM_PREP', subjectGoals: null }, 'SCIENCE')).toBe('EXAM_PREP');
+  });
+
+  it.each(SUBJECTS.map((s) => [s.code, s] as const))('%s: every goal aims at real skills of the subject', (_, subject) => {
+    const skills = subject.skills;
+    for (const goal of ['FOUNDATION', 'GRADE_LEVEL', 'EXAM_PREP', 'PROBLEM_SOLVING', 'MASTERY'] as const) {
+      const targets = goalTargets(goal, skills, 'P4', subject.applied);
+      expect(targets.length).toBeGreaterThan(0);
+      for (const t of targets) expect(skills.map((s) => s.code)).toContain(t);
+    }
+    expect(goalTargets('PROBLEM_SOLVING', skills, 'P4', subject.applied).sort()).toEqual([...subject.applied].sort());
+    for (const a of subject.applied) expect(goalTargets('FOUNDATION', skills, 'P4', subject.applied)).not.toContain(a);
   });
 });

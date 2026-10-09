@@ -106,28 +106,45 @@ export type Goal = (typeof GOALS)[number];
 
 const GRADE_ORDER = ['K1', 'K2', 'K3', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
 
+export function isGoal(value: unknown): value is Goal {
+  return typeof value === 'string' && (GOALS as readonly string[]).includes(value);
+}
+
+/** The goal a child set for one subject, falling back to their general goal. */
+export function goalFor(student: { goal: Goal; subjectGoals: unknown }, subject: string): Goal {
+  const own = (student.subjectGoals as Record<string, unknown> | null)?.[subject];
+  return isGoal(own) ? own : student.goal;
+}
+
 /**
- * The skills a goal aims at (the plan then adds every prerequisite):
- * - FOUNDATION: core arithmetic and number sense up to P3
+ * The skills a goal aims at within one subject (the plan then adds every prerequisite):
+ * - FOUNDATION: the basics up to P3, without the "applied" skills
  * - GRADE_LEVEL: everything up to the child's grade
  * - EXAM_PREP: the child's own grade
- * - PROBLEM_SOLVING: word and multi-step problems
- * - MASTERY: the whole curriculum
+ * - PROBLEM_SOLVING: the subject's applied skills (word problems, conversation, experiments, critical reading, reasoning)
+ * - MASTERY: the whole subject
+ * `applied` defaults to the PROBLEM_SOLVING skill group (mathematics).
  */
-export function goalTargets(goal: Goal, skills: { code: string; grade: string; group: string }[], grade: string): string[] {
+export function goalTargets(
+  goal: Goal,
+  skills: { code: string; grade: string; group: string }[],
+  grade: string,
+  applied?: string[],
+): string[] {
   const g = (code: string) => GRADE_ORDER.indexOf(code);
+  const isApplied = (s: { code: string; group: string }) => (applied ? applied.includes(s.code) : s.group === 'PROBLEM_SOLVING');
   switch (goal) {
     case 'FOUNDATION':
-      return skills.filter((s) => g(s.grade) <= g('P3') && s.group !== 'PROBLEM_SOLVING').map((s) => s.code);
+      return skills.filter((s) => g(s.grade) <= g('P3') && !isApplied(s)).map((s) => s.code);
     case 'GRADE_LEVEL':
       return skills.filter((s) => g(s.grade) <= g(grade)).map((s) => s.code);
     case 'EXAM_PREP': {
       const own = skills.filter((s) => s.grade === grade).map((s) => s.code);
       // no skills at this exact grade (e.g. K2 has few): fall back to grade level
-      return own.length ? own : goalTargets('GRADE_LEVEL', skills, grade);
+      return own.length ? own : goalTargets('GRADE_LEVEL', skills, grade, applied);
     }
     case 'PROBLEM_SOLVING':
-      return skills.filter((s) => s.group === 'PROBLEM_SOLVING').map((s) => s.code);
+      return skills.filter(isApplied).map((s) => s.code);
     case 'MASTERY':
       return skills.map((s) => s.code);
   }

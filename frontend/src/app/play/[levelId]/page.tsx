@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { ACTIVITY, ActivityScene, BossScene } from '@/components/ActivityScene';
+import { Confetti, Countdown } from '@/components/Celebration';
 import { Loading, ProgressBar, Stars, masteryTone } from '@/components/bits';
 import { MathText } from '@/components/MathText';
 import { QuestionCard, type Feedback } from '@/components/QuestionCard';
@@ -90,16 +91,10 @@ function Play({ levelId }: { levelId: string }) {
   const [error, setError] = useState('');
   // Correct answers in a row. Only ever celebrated — a mistake just quietly resets it.
   const [combo, setCombo] = useState(0);
-  // 3 → 2 → 1 → 0 ("ไป!") → null (playing)
-  const [countdown, setCountdown] = useState<number | null>(null);
+  // "3, 2, 1, ไป!" before the first question
+  const [counting, setCounting] = useState(false);
+  const endCountdown = useCallback(() => setCounting(false), []);
   const [soundOn, setSoundOn] = useState(readSoundOn);
-
-  useEffect(() => {
-    if (countdown === null) return;
-    sfx.countdown(countdown === 0);
-    const t = setTimeout(() => setCountdown((c) => (c === null || c === 0 ? null : c - 1)), countdown === 0 ? 550 : 700);
-    return () => clearTimeout(t);
-  }, [countdown]);
 
   useEffect(() => {
     if (!ready || special) return;
@@ -135,7 +130,7 @@ function Play({ levelId }: { levelId: string }) {
       setIndex(0);
       setCorrect(0);
       setCombo(0);
-      setCountdown(3);
+      setCounting(true);
       setSummary(null);
     } catch (err) {
       setError(handleApiError(err, router));
@@ -289,12 +284,8 @@ function Play({ levelId }: { levelId: string }) {
         )}
       </div>
 
-      {countdown !== null ? (
-        <div className="card countdown" aria-live="assertive">
-          <span key={countdown} className={countdown === 0 ? 'go' : undefined}>
-            {countdown === 0 ? 'ไป! 🚀' : countdown}
-          </span>
-        </div>
+      {counting ? (
+        <Countdown onDone={endCountdown} />
       ) : (
         <>
           <div className="card">
@@ -473,35 +464,4 @@ function useCountUp(target: number, ms: number) {
     return () => clearInterval(t);
   }, [target, ms]);
   return value;
-}
-
-const CONFETTI_COLORS = ['#ff5e62', '#ffc531', '#20b26b', '#6c5ce7', '#2fb6f0', '#ff8ac6'];
-
-function Confetti() {
-  // Fixed layout per render of the summary; Math.random is fine here, it is only decoration.
-  const [pieces] = useState(() =>
-    Array.from({ length: 48 }, (_, i) => ({
-      left: Math.random() * 100,
-      delay: Math.random() * 0.8,
-      duration: 2.2 + Math.random() * 1.6,
-      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-      rotate: Math.random() * 360,
-    })),
-  );
-  return (
-    <div className="confetti" aria-hidden>
-      {pieces.map((p, i) => (
-        <i
-          key={i}
-          style={{
-            left: `${p.left}%`,
-            background: p.color,
-            transform: `rotate(${p.rotate}deg)`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
 }

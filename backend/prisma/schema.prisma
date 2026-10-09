@@ -71,6 +71,8 @@ model Student {
   // Interest profile: theme → score (see personalization/interest.engine.ts)
   interests     Json         @default("{}")
   goal          LearningGoal @default(MASTERY)
+  /// per-subject goal overrides, e.g. {"ENGLISH": "FOUNDATION"}; subjects without one use `goal`
+  subjectGoals  Json         @default("{}")
   /// the subject the child is playing now; map, path and placement follow it
   activeSubject String       @default("MATH")
   createdAt     DateTime     @default(now())

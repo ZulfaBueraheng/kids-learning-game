@@ -54,6 +54,8 @@ export interface RecInput {
   current: string | null;
   reviews: string[];
   skills: Map<string, RecSkill>;
+  /** Thai names of every skill, including ones the child has not started yet */
+  names?: Map<string, string>;
   /** level ids of the latest sessions, most recent first */
   recentLevelIds: string[];
   topInterest: Theme | null;
@@ -80,7 +82,7 @@ export function recommend(input: RecInput, limit = 3): Recommendation[] {
   const recent = new Set(input.recentLevelIds.slice(0, 2));
   const liked = new Set(input.topInterest ? (INTEREST_ACTIVITY[input.topInterest] ?? []) : []);
   const skill = (code: string) => input.skills.get(code);
-  const nameOf = (code: string) => skill(code)?.nameTh ?? code;
+  const nameOf = (code: string) => skill(code)?.nameTh ?? input.names?.get(code) ?? code;
 
   const stageScore = (level: RecLevel, base: number) =>
     base + (liked.has(level.activity) ? 4 : 0) - (recent.has(level.id) ? 20 : 0);

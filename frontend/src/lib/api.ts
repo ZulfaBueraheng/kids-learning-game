@@ -33,13 +33,55 @@ export const THEMES: Record<Theme, { label: string; emoji: string }> = {
 };
 export const INTEREST_THEMES: InterestTheme[] = ['DINOSAUR', 'SPACE', 'ANIMALS', 'RACING', 'FANTASY', 'BLOCKS'];
 
-export const GOALS: { value: Goal; label: string; emoji: string; description: string }[] = [
-  { value: 'FOUNDATION', label: 'ปูพื้นฐานให้แน่น', emoji: '🧱', description: 'จำนวน บวก ลบ คูณ หาร เศษส่วน ถึงระดับ ป.3' },
-  { value: 'GRADE_LEVEL', label: 'ตามระดับชั้น', emoji: '🎒', description: 'ทุกทักษะจนถึงชั้นที่เรียนอยู่' },
-  { value: 'EXAM_PREP', label: 'เตรียมสอบ', emoji: '📝', description: 'เน้นทักษะของชั้นที่เรียนอยู่' },
-  { value: 'PROBLEM_SOLVING', label: 'นักแก้โจทย์ปัญหา', emoji: '🧩', description: 'โจทย์ปัญหาและทักษะที่ต้องใช้' },
-  { value: 'MASTERY', label: 'เก่งคณิตครบทุกเรื่อง', emoji: '🏆', description: 'ทั้งหลักสูตรถึง ป.6' },
-];
+export interface GoalOption {
+  value: Goal;
+  label: string;
+  emoji: string;
+  description: string;
+}
+
+/** What each goal means in each subject (the backend aims the path the same way). */
+const SUBJECT_GOALS: Record<string, { short: string; foundation: string; applied: { label: string; emoji: string; description: string } }> = {
+  MATH: {
+    short: 'คณิต',
+    foundation: 'จำนวน บวก ลบ คูณ หาร เศษส่วน เวลา เงิน ถึงระดับ ป.3',
+    applied: { label: 'นักแก้โจทย์ปัญหา', emoji: '🧩', description: 'โจทย์ปัญหาและทักษะที่ต้องใช้' },
+  },
+  ENGLISH: {
+    short: 'อังกฤษ',
+    foundation: 'ตัวอักษร เสียง คำศัพท์ การสะกด ถึงระดับ ป.3',
+    applied: { label: 'นักสื่อสาร', emoji: '💬', description: 'พูดคุยและอ่านเรื่องภาษาอังกฤษ' },
+  },
+  SCIENCE: {
+    short: 'วิทย์',
+    foundation: 'สิ่งมีชีวิต พืช สัตว์ ร่างกาย อากาศ ถึงระดับ ป.3',
+    applied: { label: 'นักทดลอง', emoji: '🧪', description: 'การทดลอง ระบบนิเวศ และไฟฟ้า' },
+  },
+  READING: {
+    short: 'ภาษาไทย',
+    foundation: 'พยัญชนะ สระ วรรณยุกต์ อ่านคำ สะกดคำ ถึงระดับ ป.3',
+    applied: { label: 'นักอ่านคิดวิเคราะห์', emoji: '🔎', description: 'อ่านจับใจความ อ่านคิดวิเคราะห์ และสำนวน' },
+  },
+  LOGIC: {
+    short: 'ตรรกะ',
+    foundation: 'แบบรูป จัดกลุ่ม ทิศทาง ลำดับ ถึงระดับ ป.3',
+    applied: { label: 'นักสืบตรรกะ', emoji: '🕵️', description: 'การอนุมาน ตรรกะเงื่อนไข และปริศนาตาราง' },
+  },
+};
+
+export function goalOptions(subject: string): GoalOption[] {
+  const meta = SUBJECT_GOALS[subject] ?? SUBJECT_GOALS.MATH;
+  return [
+    { value: 'FOUNDATION', label: 'ปูพื้นฐานให้แน่น', emoji: '🧱', description: meta.foundation },
+    { value: 'GRADE_LEVEL', label: 'ตามระดับชั้น', emoji: '🎒', description: 'ทุกทักษะจนถึงชั้นที่เรียนอยู่' },
+    { value: 'EXAM_PREP', label: 'เตรียมสอบ', emoji: '📝', description: 'เน้นทักษะของชั้นที่เรียนอยู่' },
+    { value: 'PROBLEM_SOLVING', ...meta.applied },
+    { value: 'MASTERY', label: `เก่ง${meta.short}ครบทุกเรื่อง`, emoji: '🏆', description: 'ทั้งหลักสูตรถึง ป.6' },
+  ];
+}
+
+/** Mathematics goals (kept for older callers). */
+export const GOALS: GoalOption[] = goalOptions('MATH');
 
 export interface InterestLevel {
   theme: InterestTheme;
@@ -54,7 +96,10 @@ export interface Student {
   grade: Grade;
   xp: number;
   coins: number;
+  /** the goal for the subject being shown */
   goal: Goal;
+  /** every subject's goal */
+  goals?: Record<string, Goal>;
   interests: InterestLevel[];
   activeSubject: string;
 }
@@ -391,7 +436,7 @@ export const api = {
   login: (loginCode: string) => request<{ token: string; student: Student }>('POST', '/auth/login', { loginCode }),
   me: () => request<Student>('GET', '/students/me'),
   setInterests: (themes: InterestTheme[]) => request<Student>('PUT', '/students/me/interests', { themes }),
-  setGoal: (goal: Goal) => request<Student>('PUT', '/students/me/goal', { goal }),
+  setGoal: (goal: Goal, subject?: string) => request<Student>('PUT', '/students/me/goal', { goal, subject }),
   setSubject: (subject: string) => request<Student>('PUT', '/students/me/subject', { subject }),
   mySubjects: () => request<SubjectProgress[]>('GET', '/progress/subjects'),
 

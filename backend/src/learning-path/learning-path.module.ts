@@ -3,7 +3,8 @@ import { StudentId } from '../auth/auth.guard.js';
 import { MasteryService } from '../mastery/mastery.service.js';
 import { SkillsService } from '../skills/skills.module.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { buildLearningPlan, goalTargets, type StudentSkillState } from './learning-path.engine.js';
+import { subjectDef } from '../curriculum/subjects.js';
+import { buildLearningPlan, goalFor, goalTargets, type StudentSkillState } from './learning-path.engine.js';
 
 @Injectable()
 export class LearningPathService {
@@ -23,9 +24,10 @@ export class LearningPathService {
       const row = profile.get(s.id);
       if (row) state.set(s.code, { mastery: row.mastery, nextReviewAt: row.nextReviewAt });
     }
-    // The child's goal decides which skills the path aims at. A goal that has
-    // nothing in this subject (e.g. word problems in English) means the whole subject.
-    const targets = goalTargets(student.goal, skills, student.grade);
+    // The child's goal for this subject decides which skills the path aims at.
+    // A goal with nothing to aim at here means the whole subject.
+    const goal = goalFor(student, subject);
+    const targets = goalTargets(goal, skills, student.grade, subjectDef(subject)?.applied);
     const plan = buildLearningPlan(skills, state, { goals: targets.length ? targets : skills.map((s) => s.code) });
     const info = (code: string) => {
       const s = skills.find((k) => k.code === code)!;
@@ -33,7 +35,7 @@ export class LearningPathService {
     };
     return {
       subject,
-      goal: student.goal,
+      goal,
       current: plan.current,
       path: plan.path.map((p) => ({ ...info(p.skillCode), ...p })),
       reviews: plan.reviews.map(info),

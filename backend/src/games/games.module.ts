@@ -370,6 +370,7 @@ export class GamesService {
     const recs: (Recommendation & { assignmentId?: string })[] = recommend({
       levels: worlds.flatMap((w) => w.levels.map((l) => ({ ...l, worldNameTh: w.nameTh, worldEmoji: w.emoji }))),
       current: plan.current,
+      names: new Map(skills.map((s) => [s.code, s.nameTh])),
       reviews: plan.reviews.map((r) => r.skillCode),
       skills: recSkills,
       recentLevelIds: recent.map((r) => r.levelId!),

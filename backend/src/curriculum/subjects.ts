@@ -19,6 +19,7 @@ export const SUBJECTS: SubjectDef[] = [
     worlds: MATH_WORLDS,
     placementStart: PLACEMENT_START,
     items: ITEMS,
+    applied: MATH_SKILLS.filter((s) => s.group === 'PROBLEM_SOLVING').map((s) => s.code),
   },
   { code: 'ENGLISH', name: 'English', nameTh: 'ภาษาอังกฤษ', emoji: '🔤', ...ENGLISH },
   { code: 'SCIENCE', name: 'Science', nameTh: 'วิทยาศาสตร์', emoji: '🔬', ...SCIENCE },

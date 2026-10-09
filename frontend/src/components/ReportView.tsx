@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { GOALS, GRADES, SUBJECT_META, THEMES, type StudentReport } from '@/lib/api';
+import { goalOptions, GRADES, SUBJECT_META, THEMES, type StudentReport } from '@/lib/api';
 import { ProgressBar, STATUS_LABEL, masteryTone } from './bits';
 import { Character } from './Character';
 import { WeekChart } from './WeekChart';
@@ -18,7 +18,7 @@ export function ReportView({
 }) {
   const { student } = report;
   const grade = GRADES.find((g) => g.value === student.grade)?.label ?? student.grade;
-  const goal = GOALS.find((g) => g.value === student.goal);
+  const goal = goalOptions(report.subject).find((g) => g.value === student.goal);
   const started = report.skills.filter((s) => s.mastery > 0 || s.attempts > 0);
   const groups = [...new Set(started.map((s) => s.group))];
   const lastActive = report.lastActiveAt

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ACTIVITY } from '@/components/ActivityScene';
 import { Loading, Stars } from '@/components/bits';
+import { Character } from '@/components/Character';
 import { SubjectSwitcher } from '@/components/SubjectSwitcher';
 import { TopBar } from '@/components/TopBar';
 import { api, type Dashboard, type Recommendation, type World } from '@/lib/api';
+import { sfx } from '@/lib/sfx';
 import { handleApiError, useRequireAuth } from '@/lib/useRequireAuth';
 
 const QUEST_LABEL: Record<Recommendation['kind'], string> = {
@@ -75,6 +77,7 @@ export default function MapPage() {
                 <Link
                   key={`${q.kind}-${q.levelId ?? q.assignmentId ?? 'review'}`}
                   href={questHref(q)}
+                  onClick={() => sfx.tap()}
                   className={`quest ${q.kind.toLowerCase()}${i === 0 ? ' first' : ''}`}
                 >
                   <span className="quest-emoji">{q.emoji}</span>
@@ -118,15 +121,23 @@ export default function MapPage() {
                     </span>
                     <span className="skill">{level.skillNameTh}</span>
                     {level.unlocked && <Stars count={level.stars} />}
+                    {level.recommended && level.unlocked && (
+                      <span className="you-here" aria-label="ด่านที่แนะนำ">
+                        <Character look={dash.character} size={20} />
+                        <span className="you-label">หนูอยู่นี่!</span>
+                      </span>
+                    )}
                   </>
                 );
-                const cls = `stage${level.isBoss ? ' boss' : ''}${level.recommended ? ' recommended' : ''}${level.unlocked ? '' : ' locked'}`;
+                const awake = level.isBoss && level.unlocked && level.stars === 0;
+                const cls = `stage${level.isBoss ? ' boss' : ''}${awake ? ' awake' : ''}${level.recommended ? ' recommended' : ''}${level.unlocked ? '' : ' locked'}`;
+                const pop = { ['--i' as string]: i };
                 return level.unlocked ? (
-                  <Link key={level.id} href={`/play/${level.id}`} className={cls}>
+                  <Link key={level.id} href={`/play/${level.id}`} className={cls} style={pop} onClick={() => sfx.tap()}>
                     {body}
                   </Link>
                 ) : (
-                  <div key={level.id} className={cls} aria-disabled>
+                  <div key={level.id} className={cls} style={pop} aria-disabled>
                     {body}
                   </div>
                 );

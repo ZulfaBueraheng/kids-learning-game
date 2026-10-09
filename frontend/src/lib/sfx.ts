@@ -80,6 +80,11 @@ export const sfx = {
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.3, 'triangle', 0.12));
   },
+  /** a light pop when tapping a stage on the map */
+  tap() {
+    tone(784, 0, 0.07, 'triangle', 0.08);
+    tone(1175, 0.05, 0.09, 'triangle', 0.06);
+  },
   tryAgain() {
     [392, 523].forEach((f, i) => tone(f, i * 0.15, 0.25, 'sine', 0.1));
   },

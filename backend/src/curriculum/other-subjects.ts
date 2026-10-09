@@ -14,11 +14,14 @@ export interface CurriculumDef {
   worlds: WorldDef[];
   placementStart: Partial<Record<Grade, string>>;
   items: ItemDef[];
+  /** "Applied" skills: what the problem-solving goal aims at in this subject */
+  applied: string[];
 }
 
 // ───────────── 🔤 English ─────────────
 
 export const ENGLISH: CurriculumDef = {
+  applied: ['EN_CONVERSATION', 'EN_READING'],
   skills: [
     { code: 'EN_LETTERS', group: 'EN_ALPHABET', name: 'Letters', nameTh: 'ตัวอักษร A–Z', grade: 'K1', prerequisites: [] },
     { code: 'EN_PHONICS', group: 'EN_ALPHABET', name: 'Phonics', nameTh: 'เสียงตัวอักษร', grade: 'K2', prerequisites: ['EN_LETTERS'] },
@@ -131,6 +134,7 @@ export const ENGLISH: CurriculumDef = {
 // ───────────── 🔬 Science ─────────────
 
 export const SCIENCE: CurriculumDef = {
+  applied: ['SCI_EXPERIMENT', 'SCI_ECOSYSTEM', 'SCI_ELECTRICITY'],
   skills: [
     { code: 'SCI_LIVING', group: 'SCI_LIFE', name: 'Living Things', nameTh: 'สิ่งมีชีวิตและไม่มีชีวิต', grade: 'P1', prerequisites: [] },
     { code: 'SCI_ANIMALS', group: 'SCI_LIFE', name: 'Animals', nameTh: 'สัตว์รอบตัว', grade: 'P2', prerequisites: ['SCI_LIVING'] },
@@ -248,6 +252,7 @@ export const SCIENCE: CurriculumDef = {
 // ───────────── 📖 Thai reading ─────────────
 
 export const READING: CurriculumDef = {
+  applied: ['TH_COMPREHENSION', 'TH_COMPREHENSION_ADV', 'TH_IDIOMS'],
   skills: [
     { code: 'TH_CONSONANTS', group: 'TH_LETTERS', name: 'Thai Consonants', nameTh: 'พยัญชนะไทย', grade: 'K1', prerequisites: [] },
     { code: 'TH_VOWELS', group: 'TH_LETTERS', name: 'Thai Vowels', nameTh: 'สระไทย', grade: 'K2', prerequisites: ['TH_CONSONANTS'] },
@@ -360,6 +365,7 @@ export const READING: CurriculumDef = {
 // ───────────── 🧩 Logical thinking & problem solving ─────────────
 
 export const LOGIC: CurriculumDef = {
+  applied: ['LOG_DEDUCTION', 'LOG_TRUTH', 'LOG_COMBINATIONS', 'LOG_GRID_LOGIC'],
   skills: [
     { code: 'LOG_PATTERNS', group: 'LOG_PATTERNS', name: 'Patterns', nameTh: 'แบบรูปและลำดับ', grade: 'K2', prerequisites: [] },
     { code: 'LOG_ODD_ONE_OUT', group: 'LOG_CLASSIFY', name: 'Odd One Out', nameTh: 'หาสิ่งที่ไม่เข้าพวก', grade: 'K3', prerequisites: [] },
